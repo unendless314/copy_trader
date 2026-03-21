@@ -1,0 +1,61 @@
+runtime:
+  mode: observe          # observe | armed | live
+  log_level: INFO        # DEBUG | INFO | WARNING | ERROR
+  sqlite_enabled: true
+  sqlite_path: ./data/copy_trading.db
+  auto_downgrade_enabled: true   # automatically downgrade live→armed on repeated failures
+  auto_downgrade_threshold: 3    # number of consecutive live execution failures to trigger
+
+source:
+  kind: hyperliquid_wallet
+  wallet_address_env: HYPERLIQUID_TARGET_WALLET
+  rest_url: https://api.hyperliquid.xyz/info
+  poll_interval_seconds: 10
+  freshness_timeout_seconds: 30
+  request_timeout_seconds: 10
+
+binance:
+  api_key_env: BINANCE_API_KEY
+  api_secret_env: BINANCE_API_SECRET
+  testnet: true          # production: false, testnet: true
+  position_mode: ONEWAY
+  leverage:
+    default: 3            # TODO: confirm against account MAX leverage before go-live
+  price_guard:
+    enabled: true
+    reference_price: mark_price   # mark_price | mid_price
+    max_deviation_bps: 15
+
+copy_trade:
+  copy_ratio: 0.01
+  allowed_sides:
+    long: true
+    short: true
+  symbols:
+    whitelist:
+      - BTCUSDT
+    blacklist: []
+    mapping:
+      BTC: BTCUSDT
+
+risk:
+  max_symbol_notional_usdt: 1000     # not enforced at runtime; documentation intent only
+  max_total_notional_usdt: 1000      # not enforced at runtime; documentation intent only
+  max_single_rebalance_notional_usdt: 2000   # per-cycle order cap (active enforcement)
+  max_delta_convergence_ratio: 1.0    # 1.0 = convergence cap disabled; max_single is sole cap
+  min_rebalance_pct: 0.02
+  min_rebalance_notional_usdt: 500    # must be >= MOQ (200 USDT) to yield valid orders
+  max_orders_per_cycle: 1
+
+execution:
+  order_type: MARKET           # V1 fixed
+  symbol_cooldown_seconds: 30
+  flip_behavior: CLOSE_THEN_OPEN  # V1 fixed
+  skip_on_price_guard: true
+
+observability:
+  terminal_warnings: true
+  persist_source_snapshots: true
+  persist_binance_positions: true
+  persist_decisions: true
+  persist_execution_results: true
