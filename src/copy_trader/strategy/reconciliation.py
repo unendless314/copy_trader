@@ -168,14 +168,16 @@ class ReconciliationEngine:
         # Determine order direction first (needed for price guard side selection)
         is_buy = raw_delta > Decimal(0)
 
-        capped_qty = apply_convergence_cap(
+        # apply_convergence_cap() returns an absolute executable quantity.
+        # The signed order intent must be restored from raw_delta afterward.
+        capped_qty_abs = apply_convergence_cap(
             raw_delta=raw_delta,
             reference_price=reference_price,
             risk=risk,
             filters=filters,
         )
 
-        if not is_tradable(capped_qty, reference_price, risk, filters):
+        if not is_tradable(capped_qty_abs, reference_price, risk, filters):
             return DecisionRecord(
                 cycle_id=cycle_id,
                 runtime_mode=runtime_mode.value,
@@ -184,13 +186,15 @@ class ReconciliationEngine:
                 target_size=target_size,
                 actual_size=actual_size,
                 raw_delta_size=raw_delta,
-                capped_delta_size=capped_qty,
+                capped_delta_size=Decimal(0),
                 decision_type=DecisionType.SKIP_BELOW_THRESHOLD,
                 block_reason="not_tradable_after_cap",
                 reference_price=reference_price,
                 executable_price=None,
                 price_deviation_bps=None,
             )
+
+        capped_qty = capped_qty_abs if raw_delta > Decimal(0) else -capped_qty_abs
 
         # --- Rule 6: Drift threshold ---
         if not exceeds_drift_threshold(abs(raw_delta), actual_size, reference_price, risk):

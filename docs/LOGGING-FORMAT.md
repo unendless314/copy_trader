@@ -75,19 +75,16 @@ Required fields:
 - `source_size`
 - `target_size`
 - `actual_size`
-- `delta_size`
+- `raw_delta_size`
+- `capped_delta_size`
 - `decision`
 - `block_reason`
-- `cooldown_active`
-- `tradable`
-- `drift_pass`
 
 Recommended fields:
 
 - `reference_price`
 - `executable_price`
 - `price_deviation_bps`
-- `proposed_order_qty`
 - `applied_convergence_ratio`
 - `applied_notional_cap_usdt`
 
@@ -106,18 +103,20 @@ Example:
   "source_size": "-0.25",
   "target_size": "-0.0025",
   "actual_size": "0",
-  "delta_size": "-0.0025",
+  "raw_delta_size": "-0.0025",
+  "capped_delta_size": "-0.002",
   "decision": "REBALANCE_INCREASE",
   "block_reason": null,
-  "cooldown_active": false,
-  "tradable": true,
-  "drift_pass": true,
   "reference_price": "84250.1",
   "executable_price": "84251.0",
-  "price_deviation_bps": "0.11",
-  "proposed_order_qty": "0.002"
+  "price_deviation_bps": "0.11"
 }
 ```
+
+Field semantics:
+
+- `raw_delta_size`: signed pre-cap delta
+- `capped_delta_size`: signed post-cap executable delta
 
 ## Warning Event Schema
 

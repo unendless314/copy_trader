@@ -68,6 +68,14 @@ mkdir -p data && chmod 755 data
 
 If SQLite write fails in `armed` or `live`, the program logs a warning and continues without trading halt. This is by design.
 
+### SQLite Schema Reset Policy
+
+This project currently uses a drop-and-recreate SQLite strategy for schema changes.
+
+- when `reconciliation_decisions` columns change, do not reuse the old DB
+- delete the old `copy_trading.db` before restart, or point `runtime.sqlite_path` at a new file
+- startup now validates the expected schema and fails fast on mismatch instead of attempting a partial upgrade
+
 ---
 
 ## 3. `once` vs `run`
@@ -149,7 +157,7 @@ python -m copy_trader.main run --config config.yaml
 
 Watch logs for 3–5 cycles. Confirm:
 - SQLite records appear in `data/copy_trading.db`
-- `reconciliation_decisions` table has rows with correct decision strings
+- `reconciliation_decisions` table has rows with correct decision strings and signed delta fields
 - `execution_results` table exists but has no live orders yet
 - No `ERROR` outcomes
 
@@ -241,6 +249,8 @@ The failure counter resets to 0 only when a live order is **unambiguously accept
 2. Restart: `python -m copy_trader.main run --config config.yaml`
 3. Confirm orders stop
 4. Inspect `execution_results` and logs to understand the trigger
+   - verify `raw_delta_size` sign matches `capped_delta_size`
+   - verify `execution_results.action` matches the signed executable delta
 5. Do not return to `armed` or `live` until root cause is found
 
 ### If the Program Crashes

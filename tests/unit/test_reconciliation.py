@@ -171,6 +171,77 @@ def test_scenario_b_overexposed_long():
     assert _evaluate("10", "0.14") == DecisionType.REBALANCE_REDUCE
 
 
+def test_reduce_keeps_negative_capped_delta():
+    cfg = _make_cfg(
+        **{
+            "copy_trade": {"copy_ratio": 0.01},
+            "risk": {
+                "max_single_rebalance_notional_usdt": 1000,
+                "max_delta_convergence_ratio": 1.0,
+                "min_rebalance_pct": 0.001,
+                "min_rebalance_notional_usdt": 1,
+            },
+        }
+    )
+    engine = ReconciliationEngine(cfg)
+
+    rec = engine.evaluate(
+        symbol=SYMBOL,
+        source_position=_source("10"),
+        actual_position=_actual("0.14"),
+        price_snapshot=_price(),
+        filters=_filters(),
+        cooldown=CooldownManager(30),
+        is_source_fresh=True,
+        cycle_id="test",
+        runtime_mode=RuntimeMode.observe,
+    )
+
+    assert rec.decision_type == DecisionType.REBALANCE_REDUCE
+    assert rec.raw_delta_size < 0
+    assert rec.capped_delta_size < 0
+
+
+def test_short_overexposed_reduce_keeps_positive_capped_delta():
+    engine = ReconciliationEngine(_make_cfg())
+
+    rec = engine.evaluate(
+        symbol=SYMBOL,
+        source_position=_source("-10"),
+        actual_position=_actual("-0.14"),
+        price_snapshot=_price(),
+        filters=_filters(),
+        cooldown=CooldownManager(30),
+        is_source_fresh=True,
+        cycle_id="test",
+        runtime_mode=RuntimeMode.observe,
+    )
+
+    assert rec.decision_type == DecisionType.REBALANCE_REDUCE
+    assert rec.raw_delta_size > 0
+    assert rec.capped_delta_size > 0
+
+
+def test_short_to_flat_close_keeps_positive_capped_delta():
+    engine = ReconciliationEngine(_make_cfg())
+
+    rec = engine.evaluate(
+        symbol=SYMBOL,
+        source_position=_source("0"),
+        actual_position=_actual("-0.05"),
+        price_snapshot=_price(),
+        filters=_filters(),
+        cooldown=CooldownManager(30),
+        is_source_fresh=True,
+        cycle_id="test",
+        runtime_mode=RuntimeMode.observe,
+    )
+
+    assert rec.decision_type == DecisionType.REBALANCE_CLOSE
+    assert rec.raw_delta_size > 0
+    assert rec.capped_delta_size > 0
+
+
 def test_scenario_c_source_flat_binance_long():
     """Source flat→ target 0, actual 0.05 → CLOSE."""
     assert _evaluate("0", "0.05") == DecisionType.REBALANCE_CLOSE

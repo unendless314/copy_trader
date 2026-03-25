@@ -78,13 +78,13 @@ class EventLogger:
                    source_size=str(record.source_size),
                    target_size=str(record.target_size),
                    actual_size=str(record.actual_size),
-                   delta_size=str(record.raw_delta_size),
+                   raw_delta_size=str(record.raw_delta_size),
+                   capped_delta_size=str(record.capped_delta_size),
                    decision=record.decision_type.value,
                    block_reason=record.block_reason,
                    reference_price=str(record.reference_price) if record.reference_price else None,
                    executable_price=str(record.executable_price) if record.executable_price else None,
                    price_deviation_bps=str(record.price_deviation_bps) if record.price_deviation_bps else None,
-                   proposed_order_qty=str(record.capped_delta_size),
                    )
 
     def warning(self, warning_code: str, message: str, symbol: Optional[str] = None,

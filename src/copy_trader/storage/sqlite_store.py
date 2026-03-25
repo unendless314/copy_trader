@@ -19,7 +19,7 @@ from pathlib import Path
 
 from copy_trader.exchange.models import ActualPosition
 from copy_trader.source.models import SourcePosition
-from copy_trader.storage.schema import ALL_SCHEMAS
+from copy_trader.storage.schema import ALL_SCHEMAS, EXPECTED_TABLE_COLUMNS
 from copy_trader.strategy.reconciliation import DecisionRecord
 
 logger = logging.getLogger(__name__)
@@ -51,6 +51,7 @@ class SQLiteStore:
         con.execute("PRAGMA busy_timeout=30000;")
         for ddl in ALL_SCHEMAS:
             con.execute(ddl)
+        self._validate_schema(con)
         con.commit()
         con.close()
 
@@ -58,6 +59,17 @@ class SQLiteStore:
         con = sqlite3.connect(str(self._db_path), timeout=30.0)
         con.execute("PRAGMA busy_timeout=30000;")
         return con
+
+    def _validate_schema(self, con: sqlite3.Connection) -> None:
+        for table_name, expected_columns in EXPECTED_TABLE_COLUMNS.items():
+            rows = con.execute(f"PRAGMA table_info({table_name})").fetchall()
+            actual_columns = [row[1] for row in rows]
+            if actual_columns != expected_columns:
+                raise sqlite3.DatabaseError(
+                    f"SQLite schema mismatch for table '{table_name}'. "
+                    f"Expected columns {expected_columns}, found {actual_columns}. "
+                    f"Delete '{self._db_path}' and restart to recreate the database."
+                )
 
     # ------------------------------------------------------------------
     # Insert APIs (silent on failure per ERROR-TAXONOMY.md §6)
@@ -159,8 +171,9 @@ class SQLiteStore:
             con.execute(
                 "INSERT INTO reconciliation_decisions "
                 "(cycle_id, runtime_mode, symbol, source_size, target_size, actual_size, "
-                "delta_size, decision, block_reason, created_at) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "raw_delta_size, capped_delta_size, decision, block_reason, reference_price, "
+                "executable_price, price_deviation_bps, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     record.cycle_id,
                     record.runtime_mode,
@@ -169,8 +182,12 @@ class SQLiteStore:
                     str(record.target_size),
                     str(record.actual_size),
                     str(record.raw_delta_size),
+                    str(record.capped_delta_size),
                     record.decision_type.value,
                     record.block_reason,
+                    str(record.reference_price) if record.reference_price is not None else None,
+                    str(record.executable_price) if record.executable_price is not None else None,
+                    str(record.price_deviation_bps) if record.price_deviation_bps is not None else None,
                     self._now(),
                 ),
             )

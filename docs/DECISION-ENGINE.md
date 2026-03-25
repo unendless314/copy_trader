@@ -34,7 +34,8 @@ Per symbol, the decision engine receives:
 Derived values:
 
 - `target_size = source_size * copy_ratio`
-- `delta_size = target_size - actual_size`
+- `raw_delta_size = target_size - actual_size`
+- `capped_delta_size = signed executable delta after convergence/notional caps`
 
 Sizing basis clarification:
 
@@ -243,6 +244,12 @@ The engine must apply the stricter cap.
 
 This means the requested order size may be smaller than the full delta.
 
+Important signed-quantity rule:
+
+- `apply_convergence_cap()` operates on absolute quantity only
+- the caller must restore the sign from `raw_delta_size`
+- final order side is derived from the signed post-cap delta, not from the decision label alone
+
 After caps are applied, the requested order size must still pass Binance market-order tradability rules.
 
 Tradability validation order:
@@ -271,6 +278,11 @@ Each decision should produce a structured record with at least:
 - `runtime_mode`
 - `created_at`
 
+Signed field semantics:
+
+- `raw_delta_size`: signed pre-cap delta
+- `capped_delta_size`: signed post-cap executable delta
+
 ## Example Scenarios
 
 ### Scenario A: Small BTC Long Drift
@@ -294,6 +306,7 @@ If thresholds pass:
 If thresholds pass:
 
 - outcome: `REBALANCE_REDUCE`
+- `raw_delta_size < 0`, so execution side is `SELL`
 
 ### Scenario C: Source Flat, Binance Still Long
 
@@ -303,6 +316,17 @@ If thresholds pass:
 If thresholds pass:
 
 - outcome: `REBALANCE_CLOSE`
+- `raw_delta_size < 0`, so execution side is `SELL`
+
+### Scenario C2: Source Flat, Binance Still Short
+
+- target size: `0`
+- actual size: `-0.05 BTC`
+
+If thresholds pass:
+
+- outcome: `REBALANCE_CLOSE`
+- `raw_delta_size > 0`, so execution side is `BUY`
 
 ### Scenario D: Source Flips from Long to Short
 
@@ -312,10 +336,23 @@ If thresholds pass:
 Cycle 1:
 
 - outcome: `REBALANCE_FLIP_CLOSE`
+- side opposes current actual position
 
 Later cycle after close:
 
 - outcome: `REBALANCE_FLIP_OPEN`
+
+### Scenario E: Overexposed BTC Short
+
+- source size: `-10 BTC`
+- copy ratio: `0.01`
+- target size: `-0.10 BTC`
+- actual size: `-0.14 BTC`
+
+If thresholds pass:
+
+- outcome: `REBALANCE_REDUCE`
+- `raw_delta_size > 0`, so execution side is `BUY`
 
 ## Notes for Implementation
 

@@ -76,7 +76,7 @@ Sizing basis clarification:
 
 Responsibilities:
 
-- Compute `delta = target_size - actual_size`
+- Compute `raw_delta_size = target_size - actual_size`
 - Ignore non-tradable or sub-threshold deltas
 - Handle flips using close-then-open
 - Apply stepwise convergence for oversized deltas
@@ -94,8 +94,8 @@ Disallowed:
 
 Trigger policy:
 
-- delta must satisfy Binance tradability rules
-- delta must exceed configured drift threshold
+- post-cap executable delta must satisfy Binance tradability rules
+- raw delta must exceed configured drift threshold
 
 ## 5. Price Guard
 
@@ -212,9 +212,13 @@ Contract note:
 - `source_size`
 - `target_size`
 - `actual_size`
-- `delta_size`
+- `raw_delta_size`
+- `capped_delta_size`
 - `decision`
 - `block_reason`
+- `reference_price`
+- `executable_price`
+- `price_deviation_bps`
 - `created_at`
 
 ## Execution Rules
@@ -274,9 +278,13 @@ Minimum tradable size rule:
 - `source_size`
 - `target_size`
 - `actual_size`
-- `delta_size`
+- `raw_delta_size`
+- `capped_delta_size`
 - `decision`
 - `block_reason`
+- `reference_price`
+- `executable_price`
+- `price_deviation_bps`
 - `created_at`
 
 ### `execution_results`
@@ -291,3 +299,9 @@ Minimum tradable size rule:
 - `exchange_order_id`
 - `error_message`
 - `created_at`
+
+Field semantics:
+
+- `raw_delta_size`: signed pre-cap delta
+- `capped_delta_size`: signed post-cap executable delta
+- `execution_results.action`: actual submitted Binance side

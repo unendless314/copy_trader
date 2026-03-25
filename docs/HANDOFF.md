@@ -23,6 +23,7 @@ The program is no longer just a read-only prototype. The current codebase now in
 - live-mode auto-downgrade on repeated execution failures
 - `--dry-run` override to `observe`
 - `once` running a full single `PollingLoop._run_cycle()` path
+- signed delta semantics locked down across decision, execution, and SQLite persistence
 
 ### Verified Today
 
@@ -48,6 +49,11 @@ Local evidence present in the working tree:
 - SQLite DB under `data/copy_trading.db`
 - `execution_results` rows including accepted `NEW` orders and forced `REJECTED` failures
 - decision history rows including `REBALANCE_INCREASE`, `REBALANCE_FLIP_CLOSE`, and `SKIP_COOLDOWN`
+
+Schema reset note:
+
+- SQLite schema is currently managed with a drop-and-recreate policy
+- if `reconciliation_decisions` changes, delete the old DB before restart instead of attempting migration
 
 ---
 

@@ -247,6 +247,13 @@ Required behavior:
 - use close-then-open for flips
 - do not issue the reverse-side open until a later fresh snapshot confirms flat or operationally flat
 
+Signed delta rule:
+
+- order side is derived from the signed executable delta
+- positive signed delta means `BUY`
+- negative signed delta means `SELL`
+- do not infer final side from `REBALANCE_REDUCE` / `REBALANCE_CLOSE` labels alone
+
 Suggested order intent mapping:
 
 - increase long: `BUY`
