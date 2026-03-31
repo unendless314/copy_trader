@@ -19,7 +19,7 @@ class MockExecutor:
             raise self.error
         return ExecutionResult(
             accepted=True, status="NEW", symbol="BTCUSDT",
-            side="BUY", requested_size="0.1", submitted_size="0",
+            side="BUY", requested_size="0.1", submitted_size="0.1",
             exchange_order_id="123", error_message=None
         )
 

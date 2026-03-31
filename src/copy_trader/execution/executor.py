@@ -85,7 +85,7 @@ class BinanceExecutor:
                 symbol=decision.symbol,
                 side=side,
                 requested_size=qty_str,
-                submitted_size=str(data.get("executedQty", "0")),
+                submitted_size=qty_str,
                 exchange_order_id=str(order_id) if order_id else None,
                 error_message=None if accepted else f"Order returned unaccepted status: {status}",
             )

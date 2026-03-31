@@ -55,8 +55,7 @@ async def test_submit_success(executor):
     respx.post("https://testnet.binancefuture.com/fapi/v1/order").mock(
         return_value=httpx.Response(200, json={
             "orderId": 12345,
-            "status": "NEW",
-            "executedQty": "0"
+            "status": "NEW"
         })
     )
     
@@ -65,6 +64,8 @@ async def test_submit_success(executor):
     
     assert result.accepted is True
     assert result.side == "BUY"
+    assert result.requested_size == "0.1"
+    assert result.submitted_size == "0.1"
     assert result.exchange_order_id == "12345"
     assert result.error_message is None
 
@@ -75,8 +76,7 @@ async def test_submit_negative_delta_sends_sell(executor):
     route = respx.post("https://testnet.binancefuture.com/fapi/v1/order").mock(
         return_value=httpx.Response(200, json={
             "orderId": 12345,
-            "status": "NEW",
-            "executedQty": "0"
+            "status": "NEW"
         })
     )
 
@@ -85,6 +85,7 @@ async def test_submit_negative_delta_sends_sell(executor):
 
     assert result.accepted is True
     assert result.side == "SELL"
+    assert result.submitted_size == "0.1"
     assert route.calls[0].request.url.params["side"] == "SELL"
 
 
