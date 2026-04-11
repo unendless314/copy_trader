@@ -1,5 +1,5 @@
 runtime:
-  mode: live          # observe | armed | live
+  mode: observe          # observe | armed | live
   log_level: INFO        # DEBUG | INFO | WARNING | ERROR
   sqlite_enabled: true
   sqlite_path: ./data/copy_trading.db
@@ -17,7 +17,7 @@ source:
 binance:
   api_key_env: BINANCE_API_KEY
   api_secret_env: BINANCE_API_SECRET
-  testnet: true
+  testnet: false
   position_mode: ONEWAY
   leverage:
     default: 2

@@ -27,7 +27,7 @@ binance:
     max_deviation_bps: 15
 
 copy_trade:
-  copy_ratio: 0.01
+  copy_ratio: 0.001
   allowed_sides:
     long: true
     short: true
